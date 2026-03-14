@@ -64,6 +64,9 @@ s3 = [
 sftp = [
   "paramiko>=1.15",
 ]
+vercel = [
+  "requests>=2.20.0",
+]
 [project.urls]
 Homepage = "https://github.com/jschneier/django-storages"
 
