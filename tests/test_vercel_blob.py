@@ -222,7 +222,7 @@ class TestVercelBlobStorageDelete(TestCase):
         storage.delete("myfile.txt")
 
         call_args = mock_request.call_args
-        self.assertEqual(call_args[0][0], "DELETE")
+        self.assertEqual(call_args[0][0], "POST")
         self.assertIn("delete", call_args[0][1])
         self.assertIn(f"{MOCK_BASE_URL}/myfile.txt", call_args[1]["json"]["urls"])
 

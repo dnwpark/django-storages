@@ -128,7 +128,7 @@ class VercelBlobStorage(BaseStorage):
     def delete(self, name):
         file_url = self.url(name)
         response = self._make_request(
-            "DELETE",
+            "POST",
             f"{VERCEL_BLOB_API_URL}/delete",
             json={"urls": [file_url]},
             headers={"content-type": "application/json"},
