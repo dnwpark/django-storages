@@ -118,6 +118,18 @@ class TestVercelBlobStorageSave(TestCase):
         self.assertEqual(name, "photo.jpg")
 
     @patch("storages.backends.vercel_blob.requests.request")
+    def test_save_sends_access_header(self, mock_request):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"url": f"{MOCK_BASE_URL}/f.txt", "pathname": "f.txt"}
+        mock_request.return_value = mock_response
+
+        storage = make_storage(default_acl="private")
+        storage._save("f.txt", ContentFile(b"data"))
+        headers = mock_request.call_args[1]["headers"]
+        self.assertEqual(headers["x-vercel-blob-access"], "private")
+
+    @patch("storages.backends.vercel_blob.requests.request")
     def test_save_sets_content_type(self, mock_request):
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -128,7 +140,23 @@ class TestVercelBlobStorageSave(TestCase):
         storage._save("img.png", ContentFile(b"\x89PNG"))
 
         headers = mock_request.call_args[1]["headers"]
-        self.assertEqual(headers["content-type"], "image/png")
+        self.assertEqual(headers["x-content-type"], "image/png")
+
+    @patch("storages.backends.vercel_blob.requests.request")
+    def test_save_content_type_from_file_object(self, mock_request):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"url": f"{MOCK_BASE_URL}/upload", "pathname": "upload"}
+        mock_request.return_value = mock_response
+
+        content = ContentFile(b"data")
+        content.content_type = "image/webp"
+
+        storage = make_storage()
+        storage._save("upload", content)
+
+        headers = mock_request.call_args[1]["headers"]
+        self.assertEqual(headers["x-content-type"], "image/webp")
 
     @patch("storages.backends.vercel_blob.requests.request")
     def test_save_with_cache_control(self, mock_request):
@@ -180,7 +208,7 @@ class TestVercelBlobStorageSave(TestCase):
         storage._save("f.unknownextension", ContentFile(b"data"))
 
         headers = mock_request.call_args[1]["headers"]
-        self.assertEqual(headers["content-type"], "application/octet-stream")
+        self.assertEqual(headers["x-content-type"], "application/octet-stream")
 
 
 class TestVercelBlobStorageDelete(TestCase):

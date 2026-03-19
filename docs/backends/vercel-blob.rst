@@ -36,6 +36,13 @@ local development, copy it from the store's settings page.
 
   A path prefix prepended to all stored file names, e.g. ``"media"`` or ``"uploads"``.
 
+``VERCEL_BLOB_DEFAULT_ACL``
+
+  Default: ``"public"``
+
+  Access level for uploaded files. Must match your store's access configuration in
+  the Vercel dashboard. Set to ``"private"`` for private stores.
+
 ``VERCEL_BLOB_ALLOW_OVERWRITE``
 
   Default: ``False``

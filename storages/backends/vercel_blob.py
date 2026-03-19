@@ -54,6 +54,10 @@ class VercelBlobStorage(BaseStorage):
                 "VercelBlobStorage requires a token. Set VERCEL_BLOB_TOKEN in your "
                 "Django settings or the BLOB_READ_WRITE_TOKEN environment variable."
             )
+        if self.default_acl not in ("public", "private"):
+            raise ImproperlyConfigured(
+                "VERCEL_BLOB_DEFAULT_ACL must be 'public' or 'private'."
+            )
         check_location(self)
 
     def get_default_settings(self):
@@ -61,6 +65,7 @@ class VercelBlobStorage(BaseStorage):
             "token": setting("VERCEL_BLOB_TOKEN"),
             "location": setting("VERCEL_BLOB_LOCATION", ""),
             "base_url": setting("VERCEL_BLOB_BASE_URL"),
+            "default_acl": setting("VERCEL_BLOB_DEFAULT_ACL", "public"),
             "allow_overwrite": setting("VERCEL_BLOB_ALLOW_OVERWRITE", False),
             "cache_control_max_age": setting("VERCEL_BLOB_CACHE_CONTROL_MAX_AGE"),
             "add_random_suffix": setting("VERCEL_BLOB_ADD_RANDOM_SUFFIX", False),
@@ -83,15 +88,21 @@ class VercelBlobStorage(BaseStorage):
 
     def _save(self, name, content):
         pathname = self._get_pathname(name)
-        content_type, _ = mimetypes.guess_type(name)
+        content_type = (
+            getattr(content, "content_type", None)
+            or mimetypes.guess_type(name)[0]
+            or "application/octet-stream"
+        )
 
         headers = {
             "x-api-version": "7",
-            "content-type": content_type or "application/octet-stream",
-            "x-allow-overwrite": "1" if self.allow_overwrite else "0",
+            "content-type": "application/octet-stream",
+            "x-content-type": content_type,
+            "x-vercel-blob-access": self.default_acl,
+            "x-add-random-suffix": "1" if self.add_random_suffix else "0",
         }
-        if not self.add_random_suffix:
-            headers["x-add-random-suffix"] = "0"
+        if self.allow_overwrite:
+            headers["x-allow-overwrite"] = "1"
         if self.cache_control_max_age is not None:
             headers["x-cache-control-max-age"] = str(self.cache_control_max_age)
 
