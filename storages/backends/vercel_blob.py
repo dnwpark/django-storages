@@ -136,13 +136,16 @@ class VercelBlobStorage(BaseStorage):
         response.raise_for_status()
 
     def exists(self, name):
-        file_url = self.url(name)
+        pathname = self._get_pathname(name)
         response = self._make_request(
             "GET",
             f"{VERCEL_BLOB_API_URL}/",
-            params={"url": file_url},
+            params={"prefix": pathname, "limit": 1},
         )
-        return response.status_code == 200
+        if response.status_code != 200:
+            return False
+        blobs = response.json().get("blobs", [])
+        return any(blob["pathname"] == pathname for blob in blobs)
 
     def url(self, name):
         if self.base_url:

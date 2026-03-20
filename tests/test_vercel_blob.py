@@ -232,19 +232,40 @@ class TestVercelBlobStorageExists(TestCase):
     def test_exists_true(self, mock_request):
         mock_response = MagicMock()
         mock_response.status_code = 200
+        mock_response.json.return_value = {"blobs": [{"pathname": "file.txt"}]}
         mock_request.return_value = mock_response
 
         storage = make_storage()
         self.assertTrue(storage.exists("file.txt"))
 
     @patch("storages.backends.vercel_blob.requests.request")
-    def test_exists_false(self, mock_request):
+    def test_exists_false_empty_list(self, mock_request):
         mock_response = MagicMock()
-        mock_response.status_code = 404
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"blobs": []}
         mock_request.return_value = mock_response
 
         storage = make_storage()
         self.assertFalse(storage.exists("missing.txt"))
+
+    @patch("storages.backends.vercel_blob.requests.request")
+    def test_exists_false_on_error(self, mock_request):
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_request.return_value = mock_response
+
+        storage = make_storage()
+        self.assertFalse(storage.exists("file.txt"))
+
+    @patch("storages.backends.vercel_blob.requests.request")
+    def test_exists_no_base_url(self, mock_request):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"blobs": [{"pathname": "file.txt"}]}
+        mock_request.return_value = mock_response
+
+        storage = make_storage(base_url=None)
+        self.assertTrue(storage.exists("file.txt"))
 
 
 class TestVercelBlobStorageSize(TestCase):
