@@ -124,7 +124,7 @@ class TestVercelBlobStorageSave(TestCase):
         mock_response.json.return_value = {"url": f"{MOCK_BASE_URL}/f.txt", "pathname": "f.txt"}
         mock_request.return_value = mock_response
 
-        storage = make_storage(default_acl="private")
+        storage = make_storage(access="private")
         storage._save("f.txt", ContentFile(b"data"))
         headers = mock_request.call_args[1]["headers"]
         self.assertEqual(headers["x-vercel-blob-access"], "private")

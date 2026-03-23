@@ -54,9 +54,9 @@ class VercelBlobStorage(BaseStorage):
                 "VercelBlobStorage requires a token. Set VERCEL_BLOB_TOKEN in your "
                 "Django settings or the BLOB_READ_WRITE_TOKEN environment variable."
             )
-        if self.default_acl not in ("public", "private"):
+        if self.access not in ("public", "private"):
             raise ImproperlyConfigured(
-                "VERCEL_BLOB_DEFAULT_ACL must be 'public' or 'private'."
+                "VERCEL_BLOB_ACCESS must be 'public' or 'private'."
             )
         check_location(self)
 
@@ -65,7 +65,7 @@ class VercelBlobStorage(BaseStorage):
             "token": setting("VERCEL_BLOB_TOKEN"),
             "location": setting("VERCEL_BLOB_LOCATION", ""),
             "base_url": setting("VERCEL_BLOB_BASE_URL"),
-            "default_acl": setting("VERCEL_BLOB_DEFAULT_ACL", "public"),
+            "access": setting("VERCEL_BLOB_ACCESS", "public"),
             "allow_overwrite": setting("VERCEL_BLOB_ALLOW_OVERWRITE", False),
             "cache_control_max_age": setting("VERCEL_BLOB_CACHE_CONTROL_MAX_AGE"),
             "add_random_suffix": setting("VERCEL_BLOB_ADD_RANDOM_SUFFIX", False),
@@ -98,7 +98,7 @@ class VercelBlobStorage(BaseStorage):
             "x-api-version": "7",
             "content-type": "application/octet-stream",
             "x-content-type": content_type,
-            "x-vercel-blob-access": self.default_acl,
+            "x-vercel-blob-access": self.access,
             "x-add-random-suffix": "1" if self.add_random_suffix else "0",
         }
         if self.allow_overwrite:

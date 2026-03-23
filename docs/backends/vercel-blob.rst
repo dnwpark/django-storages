@@ -62,7 +62,7 @@ Settings
   A path prefix prepended to all stored file names, e.g. ``"media"`` or
   ``"uploads"``.
 
-``default_acl`` or ``VERCEL_BLOB_DEFAULT_ACL``
+``access`` or ``VERCEL_BLOB_ACCESS``
 
   Default: ``"public"``
 
