@@ -26,6 +26,20 @@ To use Vercel Blob as the default file storage backend::
       },
   }
 
+For static files via ``collectstatic``, use the ``"staticfiles"`` key instead
+of (or alongside) ``"default"``::
+
+  STORAGES = {
+      "staticfiles": {
+          "BACKEND": "storages.backends.vercel_blob.VercelBlobStorage",
+      },
+  }
+
+On Django < 4.2, use the legacy settings instead::
+
+    DEFAULT_FILE_STORAGE = "storages.backends.vercel_blob.VercelBlobStorage"
+    STATICFILES_STORAGE = "storages.backends.vercel_blob.VercelBlobStorage"
+
 The settings below list both the ``OPTIONS`` key and the equivalent Django
 setting. See the `Vercel Blob SDK reference`_ for further details on each
 option.
@@ -42,6 +56,11 @@ For local development, copy it from the Vercel dashboard under
 ``token`` or ``VERCEL_BLOB_TOKEN``
 
   **Required.** Your Vercel Blob read-write token.
+
+.. warning::
+
+   Keep your token secret. Never hard-code it in source code or commit it to
+   version control. Use environment variables or a secrets manager instead.
 
 Settings
 ~~~~~~~~
