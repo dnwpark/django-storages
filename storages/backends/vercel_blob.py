@@ -12,6 +12,7 @@ from django.core.files.base import File
 from storages.base import BaseStorage
 from storages.utils import check_location
 from storages.utils import clean_name
+from storages.utils import is_seekable
 from storages.utils import safe_join
 from storages.utils import setting
 
@@ -23,25 +24,46 @@ class VercelBlobException(Exception):
 
 
 class VercelBlobFile(File):
-    def __init__(self, name, storage):
+    def __init__(self, name, mode, storage):
         self.name = name
+        self._mode = mode
         self._storage = storage
         self._file = None
+        self._is_dirty = False
 
     def _get_file(self):
         if self._file is None:
             self._file = SpooledTemporaryFile()
-            response = self._storage._make_request("GET", self._storage.url(self.name))
-            response.raise_for_status()
-            with BytesIO(response.content) as content:
-                copyfileobj(content, self._file)
-            self._file.seek(0)
+            if "r" in self._mode:
+                response = self._storage._make_request("GET", self._storage.url(self.name))
+                response.raise_for_status()
+                with BytesIO(response.content) as content:
+                    copyfileobj(content, self._file)
+                self._file.seek(0)
         return self._file
 
     def _set_file(self, value):
         self._file = value
 
     file = property(_get_file, _set_file)
+
+    def read(self, *args, **kwargs):
+        if "r" not in self._mode:
+            raise AttributeError("File was not opened in read mode.")
+        return super().read(*args, **kwargs)
+
+    def write(self, content):
+        if "w" not in self._mode:
+            raise AttributeError("File was not opened in write mode.")
+        self._is_dirty = True
+        return super().write(content)
+
+    def close(self):
+        if self._is_dirty:
+            self._is_dirty = False
+            self._file.seek(0)
+            self._storage._save(self.name, self._file)
+        super().close()
 
 
 class VercelBlobStorage(BaseStorage):
@@ -82,9 +104,7 @@ class VercelBlobStorage(BaseStorage):
         return clean_name(name)
 
     def _open(self, name, mode="rb"):
-        if "w" in mode:
-            raise ValueError("Vercel Blob storage does not support writing via _open. Use save() instead.")
-        return VercelBlobFile(name, self)
+        return VercelBlobFile(name, mode, self)
 
     def _save(self, name, content):
         pathname = self._get_pathname(name)
@@ -106,14 +126,14 @@ class VercelBlobStorage(BaseStorage):
         if self.cache_control_max_age is not None:
             headers["x-cache-control-max-age"] = str(self.cache_control_max_age)
 
-        content.open()
+        if is_seekable(content):
+            content.seek(0)
         response = self._make_request(
             "PUT",
             f"{VERCEL_BLOB_API_URL}/{pathname}",
             headers=headers,
             data=content.read(),
         )
-        content.close()
         response.raise_for_status()
 
         data = response.json()

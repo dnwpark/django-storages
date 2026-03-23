@@ -96,8 +96,6 @@ Notes
 - Vercel Blob does not support directories. Folders are simulated via ``/`` in
   pathnames. ``listdir()`` uses Vercel's folded listing mode to present this as a
   directory tree.
-- Write-mode file opening (``open(name, "wb")``) is not supported. Use
-  ``storage.save()`` to upload files.
 - Deleting a file that does not exist is a no-op (idempotent).
 - For **private** blobs, ``url()`` returns the raw blob URL which requires
   authentication. You will need to proxy downloads through a Django view that adds

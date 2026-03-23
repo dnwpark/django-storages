@@ -313,7 +313,19 @@ class TestVercelBlobFile(TestCase):
         self.assertIsInstance(f, VercelBlobFile)
         self.assertEqual(f.read(), b"file content")
 
-    def test_open_write_mode_raises(self):
+    @patch("storages.backends.vercel_blob.requests.request")
+    def test_open_write_mode_uploads_on_close(self, mock_request):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"url": f"{MOCK_BASE_URL}/file.txt", "pathname": "file.txt"}
+        mock_request.return_value = mock_response
+
         storage = make_storage()
-        with self.assertRaises(ValueError):
-            storage._open("file.txt", mode="wb")
+        f = storage._open("file.txt", mode="wb")
+        f.write(b"hello")
+        f.close()
+
+        # Should have issued a PUT to upload the written content
+        call_args = mock_request.call_args
+        self.assertEqual(call_args[0][0], "PUT")
+        self.assertIn("file.txt", call_args[0][1])
